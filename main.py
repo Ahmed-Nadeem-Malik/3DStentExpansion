@@ -23,7 +23,7 @@ class StentSimulation:
         return expansion_states
     
     def generate_stent_mesh(self, diameter):
-        # Make the points needed to draw the stent
+        # Make the points  for the graphing
         theta = np.linspace(0, 2*np.pi, 30)
         z = np.linspace(0, self.stent_length, 30)
         theta, z = np.meshgrid(theta, z)
@@ -47,7 +47,7 @@ class StentSimulation:
         return x, y, z
     
     def visualize_expansion(self):
-        # Show how the stent expands in 3D
+        # Expands stent
         expansion_states = self.expand_stent()
         
         for step, diameter in enumerate(expansion_states):
@@ -62,7 +62,7 @@ class StentSimulation:
             x_stent, y_stent, z_stent = self.generate_stent_mesh(diameter)
             ax.plot_surface(x_stent, y_stent, z_stent, color='red')
             
-            # Calculate important measurements
+            #Calculate other details for info
             gap_to_vessel = (self.tube_diameter - diameter) / 2
             expansion_percentage = (diameter / self.initial_stent_diameter - 1) * 100
             
@@ -82,7 +82,6 @@ class StentSimulation:
             plt.show()
 
 def main():
-    # Create and run simulation
     sim = StentSimulation(tube_diameter=10.0, stent_length=20.0, initial_stent_diameter=6.0)
     sim.visualize_expansion()
 
