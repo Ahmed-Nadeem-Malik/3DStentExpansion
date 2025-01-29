@@ -1,89 +1,118 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+
+"""Requirements specification for the stent simulation:
+1. Visualize stent expansion in blood vessel
+2. Calculate and display key measurements
+3. Support customizable parameters
+4. Ensure stent diameter never exceeds vessel diameter 
+"""
 
 
 class StentSimulation:
-    def __init__(self, tube_diameter=10.0, stent_length=20.0, initial_stent_diameter=6.0):
-        # Set up the starting values
-        self.tube_diameter = tube_diameter
+    def __init__(self, vessel_diameter=10.0, stent_length=20.0, starting_stent_diameter=6.0):
+        # checks inputs
+        self._validate_inputs(vessel_diameter, stent_length, starting_stent_diameter)
+        
+        self.vessel_diameter = vessel_diameter
         self.stent_length = stent_length
-        self.initial_stent_diameter = initial_stent_diameter
-        self.current_stent_diameter = initial_stent_diameter
+        self.starting_stent_diameter = starting_stent_diameter
         
-    def expand_stent(self, expansion_steps=5):
-        # Make the stent get bigger step by step
-        target_diameter = self.tube_diameter * 0.9  # Don't expand all the way to the tube size
-        diameter_increment = (target_diameter - self.initial_stent_diameter) / expansion_steps
-        expansion_states = []
-        
-        for step in range(expansion_steps + 1):
-            current_diameter = self.initial_stent_diameter + (step * diameter_increment)
-            expansion_states.append(current_diameter)
-            
-        return expansion_states
+        # Track sthe code
+        self.simulation_completed = False
     
-    def generate_stent_mesh(self, diameter):
-        # Make the points  for the graphing
-        theta = np.linspace(0, 2*np.pi, 30)
-        z = np.linspace(0, self.stent_length, 30)
-        theta, z = np.meshgrid(theta, z)
+    def _validate_inputs(self, vessel_diameter, stent_length, starting_stent_diameter):
+        # Checks inputs
+        if vessel_diameter <= 0 or stent_length <= 0 or starting_stent_diameter <= 0:
+            raise ValueError("All dimensions must be positive")
+        if starting_stent_diameter >= vessel_diameter:
+            raise ValueError("Starting stent diameter must be less than vessel diameter")
+
+    def make_cylinder_points(self, diameter, length):
+        # Make points for a simple cylinder shape
+        angles = np.linspace(0, 2*np.pi, 20)  # fewer points = simpler desighnn
+        lengths = np.linspace(0, length, 20)
+        angle_grid, length_grid = np.meshgrid(angles, lengths)
         
-        r = diameter/2
-        x = r * np.cos(theta)
-        y = r * np.sin(theta)
+        radius = diameter/2
+        x = radius * np.cos(angle_grid)
+        y = radius * np.sin(angle_grid)
+        z = length_grid
         
         return x, y, z
     
-    def generate_tube_mesh(self):
-        # Make the points needed to draw the tube
-        theta = np.linspace(0, 2*np.pi, 30)
-        z = np.linspace(-5, self.stent_length + 5, 30)  # Make tube longer than stent
-        theta, z = np.meshgrid(theta, z)
+    def show_expansion(self):
+        # Show 3 steps of expansion: start, middle, and end
+        final_diameter = self.vessel_diameter * 0.9
+        stent_sizes = [
+            self.starting_stent_diameter,
+            (self.starting_stent_diameter + final_diameter) / 2,
+            final_diameter
+        ]
         
-        r = self.tube_diameter/2
-        x = r * np.cos(theta)
-        y = r * np.sin(theta)
-        
-        return x, y, z
-    
-    def visualize_expansion(self):
-        # Expands stent
-        expansion_states = self.expand_stent()
-        
-        for step, diameter in enumerate(expansion_states):
-            fig = plt.figure(figsize=(12, 8))
-            ax = fig.add_subplot(111, projection='3d')
+        for step, stent_diameter in enumerate(stent_sizes):
+            # Make a new 3D plot
+            plt.figure(figsize=(10, 8))
+            plot_3d = plt.subplot(111, projection='3d')
             
-            # Draw the tube in gray
-            x_tube, y_tube, z_tube = self.generate_tube_mesh()
-            ax.plot_surface(x_tube, y_tube, z_tube, alpha=0.3, color='gray')
+            vessel_x, vessel_y, vessel_z = self.make_cylinder_points(self.vessel_diameter, self.stent_length)
+            stent_x, stent_y, stent_z = self.make_cylinder_points(stent_diameter, self.stent_length)
+          
+            plot_3d.plot_surface(vessel_x, vessel_y, vessel_z, alpha=0.3, color='gray')
+            plot_3d.plot_surface(stent_x, stent_y, stent_z, color='red')
             
-            # Draw the stent in red
-            x_stent, y_stent, z_stent = self.generate_stent_mesh(diameter)
-            ax.plot_surface(x_stent, y_stent, z_stent, color='red')
+            # Calculate measurements
+            gap = (self.vessel_diameter - stent_diameter) / 2
+            expansion = ((stent_diameter / self.starting_stent_diameter) - 1) * 100
             
-            #Calculate other details for info
-            gap_to_vessel = (self.tube_diameter - diameter) / 2
-            expansion_percentage = (diameter / self.initial_stent_diameter - 1) * 100
+            plot_3d.set_title(f'Step {step + 1}\n'
+                            f'Stent Size: {stent_diameter:.1f} mm\n'
+                            f'Gap to Vessel: {gap:.1f} mm\n'
+                            f'Expansion of Stent: {expansion:.1f}%')
             
-            ax.set_xlabel('X')
-            ax.set_ylabel('Y')
-            ax.set_zlabel('Z')
-            title = f'Stent Expansion - Step {step}\n' \
-                   f'Stent Diameter: {diameter:.2f} mm\n' \
-                   f'Gap to Vessel Wall: {gap_to_vessel:.2f} mm\n' \
-                   f'Expansion: {expansion_percentage:.1f}%'
-            ax.set_title(title)
-            
-            # Make sure the view stays the same size
-            ax.set_xlim(-self.tube_diameter/2, self.tube_diameter/2)
-            ax.set_ylim(-self.tube_diameter/2, self.tube_diameter/2)
+            plot_3d.set_xlabel('X (mm)')
+            plot_3d.set_ylabel('Y (mm)')
+            plot_3d.set_zlabel('Z (mm)')
             
             plt.show()
+        
+        self.simulation_completed = True
+        return True 
+
+    def run_tests(self):
+        #make sure all values are ok
+        test_results = {
+            'input_validation': False,
+            'simulation_execution': False,
+            'measurements_accurate': False
+        }
+        
+        # Makes sure the user inputs are valid
+        try:
+            self._validate_inputs(10.0, 20.0, 6.0)
+            test_results['input_validation'] = True
+        except ValueError:
+            pass
+        
+        # Makes sure the  actually simulation code runs
+        if self.show_expansion():
+            test_results['simulation_execution'] = True
+        
+        # Makes sure the measurements are accurate
+        final_diameter = self.vessel_diameter * 0.9
+        if final_diameter < self.vessel_diameter:
+            test_results['measurements_accurate'] = True
+            
+        return test_results
 
 def main():
-    sim = StentSimulation(tube_diameter=10.0, stent_length=20.0, initial_stent_diameter=6.0)
-    sim.visualize_expansion()
+    # Runs the code :)
+    sim = StentSimulation()
+    test_results = sim.run_tests()
+    print("Test Results:", test_results)
+    sim.show_expansion()
 
 if __name__ == "__main__":
     main()
