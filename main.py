@@ -108,11 +108,24 @@ class StentSimulation:
         return test_results
 
 def main():
-    # Runs the code :)
-    sim = StentSimulation()
+    try:
+        vessel_diameter = float(input("Enter the vessel diameter (mm): "))
+        stent_length = float(input("Enter the stent length (mm): "))
+        starting_stent_diameter = float(input("Enter the starting stent diameter (mm): "))
+    except ValueError:
+        print("Invalid input. Please enter numeric values.")
+        return
+
+    try:
+        sim = StentSimulation(vessel_diameter, stent_length, starting_stent_diameter)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return
+
+    # Run tests and display simulation outputs
     test_results = sim.run_tests()
     print("Test Results:", test_results)
-    sim.show_expansion()
+    # Removed redundant call: sim.show_expansion()
 
 if __name__ == "__main__":
     main()
