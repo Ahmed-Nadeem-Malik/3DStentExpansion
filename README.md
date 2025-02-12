@@ -25,7 +25,7 @@ If you want to run this, it's probably a good idea to run this locally. To run i
    ```bash
    python main.py
 
-Please let me know if I can improvwe this code :) thanks
+Please let me know if I can improve this code :) thanks
   
 
    
